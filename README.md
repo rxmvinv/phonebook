@@ -35,3 +35,7 @@ npm run serve
 ```
 npm start
 ```
+
+##### Heroku deploy:
+
+https://desolate-plains-78920.herokuapp.com/
