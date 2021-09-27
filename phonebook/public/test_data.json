@@ -1,0 +1,23 @@
+[
+    {
+        "id": 1,
+        "phoneNumber": "888-000-9999-12",
+        "email": "kaur@jan.com",
+        "firstName": "Kaur",
+        "lastName": "Singh"
+      },
+      {
+        "id": 2,
+        "phoneNumber": "888-000-9999-11",
+        "email": "mohammad@jan.com",
+        "firstName": "Mohammad",
+        "lastName": "Shah"
+      },
+      {
+        "id": 3,
+        "phoneNumber": "888-000-9999-13",
+        "email": "ali@jan.com",
+        "firstName": "Ali",
+        "lastName": "Aslani"
+      }
+]
