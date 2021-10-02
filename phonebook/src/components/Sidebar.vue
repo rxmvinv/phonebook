@@ -12,7 +12,7 @@
         <label>ID: 
           <input 
             type="text" 
-            disabled 
+            disabled
             v-model="updatingEntity.id"
             v-on:input="insertForm({id: $event.target.value})"
             v-on:change="insertForm({id: $event.target.value})"
@@ -62,11 +62,13 @@
         <button 
           class="commit-changes"
           v-on:click="commitChanges()"
-          v-bind:disabled="(this.validation.phoneNumber || 
-          this.validation.email || this.validation.firstName || 
-          this.validation.lastName)"  
+          v-bind:disabled="(validation.phoneNumber || 
+          validation.email || validation.firstName || 
+          validation.lastName)"  
         >{{ 
-          selectedEntity ? 'Update Entity' : 'Create Entity' 
+          Object.keys({...updatingEntityStore}).length > 0 ? 
+            'Update Entity' : 
+            'Create Entity' 
         }}</button>
       
       </form>
@@ -81,85 +83,123 @@
 </template>
 
 <script>
-import { mapState, mapActions, mapGetters } from 'vuex';
+import { computed, reactive, watch, toRefs } from 'vue'
+import { useStore } from 'vuex'
+import { createNamespacedHelpers } from 'vuex-composition-helpers'
 
-export default {
-  name: 'EntityForm',
-  data() {
-    return {
-      updatingEntity: this.selectedEntity || {},
-      validation: {
-        phoneNumber: false,
-        email: false,
-        firstName: false,
-        lastName: false
-      }
-    }
-  },
-  computed: {
-    ...mapState({
-      activeForm: state => state.main.activeForm,
-      selectedEntity: state => state.main.updatingEntity
-    }),
-    ...mapGetters({
-      listLength: 'main/getListLength'
-    })
-  },
-  watch:{
-    selectedEntity(newValue) {
-      if (newValue) {this.updatingEntity = newValue}
-    },
-    listLength(newValue) {
-      if (newValue && !this.updateEntity) {
-        this.updatingEntity = {id: this.listLength + 1}
-      }
-    },
-    updatingEntity(newValue, oldValue) {
-      if ( newValue ) {
-        this.validation = {
-          ...this.validation,
-          phoneNumber: oldValue.phoneNumber && this.phoneNumberValidationCheck(),
-          email: oldValue.email && this.emailValidationCheck(),
-          firstName: this.fieldLengthCheck(this.updatingEntity.firstName),
-          lastName: this.fieldLengthCheck(this.updatingEntity.lastName)
+  export default {
+    name: 'EntityForm',
+    setup() {
+      const store = useStore()
+      const { useActions } = createNamespacedHelpers(store, 'main')
+      const state = reactive({ 
+        updatingEntity: {},
+        validation: {
+          phoneNumber: false,
+          email: false,
+          firstName: false,
+          lastName: false
+        }
+      })
+
+      const listLength = computed(() => store.getters[`${'main'}/getListLength`])
+      const updatingEntityStore = computed(() => store.state['main'].updatingEntity)
+      const activeForm = computed(() => store.state['main'].activeForm)
+      const { updatingEntity, validation} = toRefs(state)
+
+      watch(
+        () => updatingEntityStore,
+        newValue => {
+          if ( newValue ) {
+            state.updatingEntity = {
+              id: Object.keys(newValue.value).length > 0 ? 
+                newValue.value.id : listLength.value + 1,
+              ...newValue.value,
+            }
+          }
+        },
+        { deep: true }
+      )
+
+      watch(
+        () => state.updatingEntity,
+        (newValue, oldValue) => {
+          if ( newValue && oldValue ) {
+            state.validation = {
+              ...state.validation,
+              phoneNumber: oldValue.phoneNumber && phoneNumberValidationCheck(),
+              email: oldValue.email && emailValidationCheck(),
+              firstName: fieldLengthCheck(state.updatingEntity.firstName),
+              lastName: fieldLengthCheck(state.updatingEntity.lastName)
+            }
+          }
+        },
+        { deep: true }
+      )
+
+      watch(
+        () => listLength,
+        newValue => {
+          if (newValue && !(Object.keys(state.updatingEntity).length > 0)) {
+            state.updatingEntity.id = `${newValue.value + 1}`
+          }
+        },
+        { deep: true }
+      )
+
+      const { toggleForm, saveUpdates } = useActions(['toggleForm', 'saveUpdates'])
+
+      const insertForm = (userInput) => {
+        state.updatingEntity = {
+          ...state.updatingEntity,
+          ...userInput
         }
       }
-    }
-  },
-  methods: {
-    ...mapActions({
-      toggleForm: 'main/toggleForm',
-      saveUpdates: 'main/saveUpdates'
-    }),
-    insertForm(userInput) {
-      this.updatingEntity = {
-        ...this.updatingEntity,
-        ...userInput
+
+      const commitChanges = () => {
+        (!state.validation.phoneNumber && !state.validation.email &&
+        !state.validation.firstName && !state.validation.lastName) &&
+        saveUpdates(state.updatingEntity)
       }
-    },
-    commitChanges() {
-      (!this.validation.phoneNumber && !this.validation.email &&
-      !this.validation.firstName && !this.validation.lastName) &&
-      this.saveUpdates(this.updatingEntity)
-    },
-    emailValidationCheck() {
-      const format = /\S+@\S+\.\S+/
-      const email = `${this.updatingEntity.email}`
 
-      return (email.length <= 0) || !format.test(String(email).toLowerCase());
-    },
-    phoneNumberValidationCheck() {
-      const phoneNumber = `${this.updatingEntity.phoneNumber}`
-      const format = /^(\d{3})(-{1})(\d{3})(-{1})(\d{4})$/
+      const emailValidationCheck = () => {
+        const format = /\S+@\S+\.\S+/
+        const email = `${state.updatingEntity.email}`
 
-      return (phoneNumber.length <= 0) || 
-        !format.test(String(phoneNumber).toLowerCase());
-    },
-    fieldLengthCheck(field) {
-      return `${field}`.length <= 0
+        return (email.length <= 0) || !format.test(String(email).toLowerCase());
+      }
+
+      const phoneNumberValidationCheck = () => {
+        const phoneNumber = `${state.updatingEntity.phoneNumber}`
+        const format = /^(\d{3})(-{1})(\d{3})(-{1})(\d{4})$/
+
+        return (phoneNumber.length <= 0) || 
+          !format.test(String(phoneNumber).toLowerCase());
+      }
+
+      const fieldLengthCheck = (field) => {
+        return `${field}`.length <= 0
+      }
+
+      return {
+          // getter
+          listLength,
+
+          activeForm,
+          updatingEntity,
+          updatingEntityStore,
+          validation,
+          toggleForm, 
+          saveUpdates,
+          insertForm,
+          commitChanges,
+          emailValidationCheck,
+          phoneNumberValidationCheck,
+          fieldLengthCheck
+      }
     }
   }
-}
+
 </script>
 
 <!-- Add "scoped" attribute to limit CSS to this component only -->

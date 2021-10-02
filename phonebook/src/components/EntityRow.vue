@@ -19,8 +19,8 @@
     <div
       class="action-buttons"
       v-bind:class="{
-        active: isSelected === entity.id,
-        unactive: isSelected !== entity.id
+        active: (isSelected === entity.id) && !activeForm,
+        unactive: (isSelected !== entity.id) || !!activeForm
       }"
     >
       <button v-on:click="updateEntity(entity)">Edit</button>
@@ -32,33 +32,53 @@
 </template>
 
 <script>
-import { mapActions } from 'vuex';
+import { ref, computed, watch } from 'vue'
+import { useStore } from 'vuex'
+import { createNamespacedHelpers } from 'vuex-composition-helpers'
 
 export default {
-  name: 'EntityRow',
-  data() {
-    return {
-      isSelected: null
-    }
-  },
-  props: {
-    entity: Object,
-  },
-  methods: {
-    ...mapActions({
-      toggleForm: 'main/toggleForm',
-      removeSelected: 'main/removeSelected'
-    }),
-    updateEntity(selectedEntity) {
-      this.toggleForm(selectedEntity)
+ name: 'EntityRow',
+ props: {
+   entity: Object,
+ },
+ setup() {
+  const isSelected = ref(null)
+  const store = useStore();
+  const { useActions } = createNamespacedHelpers(store, 'main')
+
+  const { toggleForm, removeSelected } = useActions(['toggleForm', 'removeSelected'])
+  const activeForm = computed(() => store.state['main'].activeForm)
+
+  watch(
+    () => activeForm,
+    newValue => {
+      if (newValue && !newValue.value) {
+        isSelected.value = null
+      }
     },
-    removeEntity(selectedID) {
-      this.removeSelected(selectedID)
-    },
-    switchMode(selectedID) {
-      this.isSelected = selectedID;
-    }
+    { deep: true }
+  )
+
+   const updateEntity = (selectedEntity) => {
+     toggleForm(selectedEntity)
+   }
+
+   const removeEntity = (selectedID) => {
+     removeSelected(selectedID)
+   }
+
+   const switchMode = (selectedID) => {
+     isSelected.value = selectedID;
+   }
+
+  return {
+    isSelected,
+    updateEntity,
+    removeEntity,
+    switchMode,
+    activeForm
   }
+ }
 }
 </script>
 

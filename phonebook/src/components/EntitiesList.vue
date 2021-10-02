@@ -10,43 +10,22 @@
 
 <script>
 import EntityRow from './EntityRow.vue'
-// import { ref, defineComponent } from 'vue'
-// import { useStore } from 'vuex'
-import { mapState } from 'vuex';
+import { computed } from 'vue'
+import { useStore } from 'vuex'
 
-export default { //defineComponent(
+export default {
  name: "EntitiesList",
  components: {
    EntityRow
  },
- computed: {
-  ...mapState({
-    entities: state => state.main.entities
-  })
- },
-//  setup() {
-//    const entities = ref([]); // ref is used to make the parameter reactive
-//    const store = useStore();  //alternative to Vue prototype of this.$store
-//    entities.value = store.state.main.entities;
+ setup() {
+  const store = useStore();
 
-//    console.log(entities.value, entities, store.state.main.entities)
-
-//    //this is the way to write methods
-//   //  const setTaskComplete = (task: Task): void => {
-//   //    store.commit(MutationType.CompleteTask, task);
-//   //  };  
-//   //  const deleteTask = (task: Task) => {
-//   //    store.commit(MutationType.DeleteTask, task);
-//   //  };
- 
-//    // To support two-way data binding
-//    return {  
-//      entities,
-//     //  setTaskComplete,
-//     //  deleteTask
-//    };
-//  }
-}//);
+  return {
+    entities: computed(() => store.state['main'].entities)
+  }
+ }
+}
 
 </script>
 

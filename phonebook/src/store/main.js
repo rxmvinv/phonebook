@@ -1,10 +1,10 @@
 import {
-    postOptions,
-    putOptions,
-    deleteOptions
-  } from './utils'
+  postOptions,
+  putOptions,
+  deleteOptions
+} from './utils'
 
-const api = `http://localhost:3001/api/entities/`
+  const api = `${process.env.VUE_APP_API_URL}/api/entities/`
 
   // initial state
   const state = () => ({
@@ -31,7 +31,9 @@ const api = `http://localhost:3001/api/entities/`
 
     toggleForm({ commit }, selectedEntity) {
       commit('switchForm')
-      selectedEntity && commit('setUpdating', selectedEntity) 
+      selectedEntity ?
+      commit('setUpdating', selectedEntity) :
+      setTimeout(() => commit('setUpdating'), 300)
     },
 
     fetchInitial({ commit }) {
@@ -41,20 +43,22 @@ const api = `http://localhost:3001/api/entities/`
     },
 
     saveUpdates({ commit, state }, updatedEntity) {
-      const updatedList = state.updatingEntity ? //updatedList.find(ent => ent.id === updatedEntity.id)
+      const updatedList = (Object.keys(state.updatingEntity).length > 0) ? //updatedList.find(ent => ent.id === updatedEntity.id)
         [...state.entities].map(ent => ent.id === updatedEntity.id ? updatedEntity : ent) :
         [...state.entities, updatedEntity]
       
-      state.updatingEntity ? 
+      Object.keys(state.updatingEntity).length > 0 ? 
       
         dataFetch(`${api}${updatedEntity.id}`, putOptions(updatedEntity)).then(initData => {
             console.log(initData)
             commit('setValues', updatedList)
+            commit('switchForm')
         }).catch(e => console.log(e)) :
 
         dataFetch(api, postOptions(updatedEntity)).then(initData => {
             console.log(initData)
             commit('setValues', updatedList)
+            commit('switchForm')
         }).catch(e => console.log(e))
     },
 
@@ -74,7 +78,7 @@ const api = `http://localhost:3001/api/entities/`
         state.activeForm = !state.activeForm;
     },
     setUpdating(state, updatingEntity) {
-        state.updatingEntity = updatingEntity;
+        state.updatingEntity = updatingEntity || {};
     },
     setValues (state, initData) {
         state.entities = [...initData];
